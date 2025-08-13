@@ -5,7 +5,7 @@ A simple timer utility package for Go.
 ## Installation
 
 ```bash
-go get github.com/delong/go-timer
+go get github.com/delong8/go-timer
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"time"
 	
-	"github.com/delong/go-timer"
+	"github.com/delong8/go-timer"
 )
 
 func main() {
