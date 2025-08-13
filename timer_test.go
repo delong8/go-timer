@@ -77,13 +77,13 @@ func TestRegisteDaily(t *testing.T) {
 	daily = DailyTaskQueue{}
 
 	// 测试正常注册
-	err := RegisteDaily("test_task", func() string { return "test" }, "09:30")
+	err := RegisteDaily("test_task", "09:30", func() string { return "test" })
 	if err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}
 
 	// 测试无效时间格式
-	err = RegisteDaily("test_task2", func() string { return "test" }, "25:00")
+	err = RegisteDaily("test_task2", "25:00", func() string { return "test" })
 	if err == nil {
 		t.Error("Expected error for invalid time format, but got none")
 	}
@@ -93,13 +93,13 @@ func TestRegisteInterval(t *testing.T) {
 	daily = DailyTaskQueue{}
 
 	// 测试无效分钟数
-	err := RegisteInterval("interval_task_0min", func() string { return "interval test" }, 0)
+	err := RegisteInterval("interval_task_0min", 0, func() string { return "interval test" })
 	if err == nil {
 		t.Error("Expected error for invalid minutes, but got none")
 	}
 
 	// 测试负数分钟数
-	err = RegisteInterval("interval_task_neg", func() string { return "interval test" }, -1)
+	err = RegisteInterval("interval_task_neg", -1, func() string { return "interval test" })
 	if err == nil {
 		t.Error("Expected error for negative minutes, but got none")
 	}
@@ -111,7 +111,7 @@ func TestRegisteIntervalCoverage(t *testing.T) {
 	daily = DailyTaskQueue{}
 
 	// 测试正常注册 - 这将覆盖循环执行部分
-	err := RegisteInterval("interval_coverage_test", func() string { return "interval test" }, 720) // 每12小时执行一次
+	err := RegisteInterval("interval_coverage_test", 720, func() string { return "interval test" }) // 每12小时执行一次
 	if err != nil {
 		// 期望会出现错误，因为第二个任务会重复
 		t.Logf("Expected error for duplicate task name: %v", err)
@@ -165,7 +165,7 @@ func TestRegisteIntervalSuccess(t *testing.T) {
 	daily = DailyTaskQueue{}
 
 	// 使用一个较大的间隔值，确保只注册一个任务
-	err := RegisteInterval("interval_success_test", func() string { return "interval test" }, 1440)
+	err := RegisteInterval("interval_success_test", 1440, func() string { return "interval test" })
 	if err != nil {
 		t.Errorf("Expected no error, but got %v", err)
 	}

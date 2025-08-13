@@ -21,31 +21,15 @@ import (
 )
 
 func main() {
-	// Create a new timer
-	t := timer.New()
-	
-	// Wait for a moment
-	time.Sleep(time.Second)
-	
-	// Get elapsed time
-	fmt.Printf("Elapsed time: %v\n", t.Elapsed())
-	
-	// Reset the timer
-	t.Reset()
-	
-	// Wait again
-	time.Sleep(time.Second)
-	
-	// Get elapsed time after reset
-	fmt.Printf("Elapsed time after reset: %v\n", t.Elapsed())
+	timer.Init()
+	timer.RegisteDaily("my_daily_task", "9:00", func() {
+		fmt.Println("Daily task executed!")
+	})
+	timer.RegisteInterval("my_interval_task", 5, func(){
+		fmt.Println("Interval task executed!")
+	})
 }
 ```
-
-## API
-
-- `timer.New()` - Creates and starts a new timer
-- `timer.Elapsed()` - Returns the time elapsed since the timer was started
-- `timer.Reset()` - Resets the timer to the current time
 
 ## License
 

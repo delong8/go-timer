@@ -15,7 +15,7 @@ func Init() {
 }
 
 // 添加任务, 时间格式为 09:12，每天执行一次
-func RegisteDaily(name string, fn func() string, time string) error {
+func RegisteDaily(name string, time string, fn func() string) error {
 	tick, err := parseTimeToTick(time)
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func RegisteDaily(name string, fn func() string, time string) error {
 }
 
 // 添加定时任务，每隔 xx 分钟执行一次
-func RegisteInterval(name string, fn func() string, minutes int) error {
+func RegisteInterval(name string, minutes int, fn func() string) error {
 	if minutes < 1 {
 		return errors.New("minutes must be over then 1")
 	}
