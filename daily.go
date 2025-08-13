@@ -71,7 +71,6 @@ func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 			return fmt.Errorf("task already exists: %s", name)
 		}
 	}
-	fmt.Println(333, name)
 	tq.tasks = append(tq.tasks, DailyTask{
 		Fn:        fn,
 		Name:      name,
@@ -92,14 +91,12 @@ func (tq *DailyTaskQueue) move() {
 	now := time.Now()
 	tq.tick = now.Hour()*60 + now.Minute()
 	tq.date = now.Format("2006-01-02")
-	fmt.Println(tq.tick, tq.date)
 }
 
 func (tq *DailyTaskQueue) looper() {
 	for {
 		tq.move()
 		for _, task := range tq.tasks {
-			fmt.Println(222, task.Name)
 			if tq.shouldRun(task) {
 				tq.caller(task, false)
 			}
@@ -109,7 +106,6 @@ func (tq *DailyTaskQueue) looper() {
 }
 
 func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool {
-	fmt.Println("should run", task.RunAtTick, task.RunAtDate, tq.date, tq.tick)
 	// 检查是否到了执行时间
 	if tq.date == task.RunAtDate {
 		return false
