@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>go-timer: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/delong/go-timer/daily.go (100.0%)</option>
+				
+				<option value="file1">github.com/delong/go-timer/timer.go (93.3%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package timer
+
+import (
+        "errors"
+        "fmt"
+        "strconv"
+        "strings"
+        "time"
+)
+
+type DailyTaskQueue struct {
+        started bool
+        // 每分钟 1 个 tick，每天 1440 个 tick
+        tick int
+        // 日期计数，记录当前循环处于哪个日期
+        date    string
+        tasks   []DailyTask
+        results []DailyTaskResult
+}
+
+type DailyTask struct {
+        Running bool
+        Fn      func() string
+        Name    string
+        // 在一个周期内，第多少个 tick 开始执行
+        RunAtTick int
+        // 上次执行是在哪个执行周期
+        RunAtDate string
+}
+
+type DailyTaskResult struct {
+        Name     string
+        Message  string
+        Error    error
+        StartAt  time.Time
+        EndAt    time.Time
+        Manually bool // 是否手动触发
+}
+
+func parseTimeToTick(hm string) (tick int, err error) <span class="cov8" title="1">{
+        t := strings.Split(hm, ":")
+        if len(t) != 2 </span><span class="cov8" title="1">{
+                err = fmt.Errorf("wrong format:%s", hm)
+                return
+        }</span>
+        <span class="cov8" title="1">h, err := strconv.ParseInt(t[0], 10, 8)
+        if err != nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">m, err := strconv.ParseInt(t[1], 10, 8)
+        if err != nil </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">if h &lt; 0 || h &gt; 23 </span><span class="cov8" title="1">{
+                err = fmt.Errorf("hour must be in 0-23")
+                return
+        }</span>
+        <span class="cov8" title="1">if m &lt; 0 || m &gt; 59 </span><span class="cov8" title="1">{
+                err = fmt.Errorf("minute must be in 0-59")
+                return
+        }</span>
+        <span class="cov8" title="1">return int(h*60 + m), nil</span>
+}
+
+func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) error <span class="cov8" title="1">{
+        if tick &lt; 0 || tick &gt; 1399 </span><span class="cov8" title="1">{
+                return fmt.Errorf("tick must be in 0-1399, not is %d", tick)
+        }</span>
+        <span class="cov8" title="1">for _, t := range tq.tasks </span><span class="cov8" title="1">{
+                if t.Name == name </span><span class="cov8" title="1">{
+                        return fmt.Errorf("task already exists: %s", name)
+                }</span>
+        }
+        <span class="cov8" title="1">fmt.Println(333, name)
+        tq.tasks = append(tq.tasks, DailyTask{
+                Fn:        fn,
+                Name:      name,
+                RunAtTick: tick,
+        })
+        return nil</span>
+}
+
+func (tq *DailyTaskQueue) Start() <span class="cov8" title="1">{
+        if tq.started </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">tq.started = true
+        go tq.looper()</span>
+}
+
+func (tq *DailyTaskQueue) move() <span class="cov8" title="1">{
+        now := time.Now()
+        tq.tick = now.Hour()*60 + now.Minute()
+        tq.date = now.Format("2006-01-02")
+        fmt.Println(tq.tick, tq.date)
+}</span>
+
+func (tq *DailyTaskQueue) looper() <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                tq.move()
+                for _, task := range tq.tasks </span><span class="cov8" title="1">{
+                        fmt.Println(222, task.Name)
+                        if tq.shouldRun(task) </span><span class="cov8" title="1">{
+                                tq.caller(task, false)
+                        }</span>
+                }
+                <span class="cov8" title="1">time.Sleep(time.Minute)</span>
+        }
+}
+
+func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool <span class="cov8" title="1">{
+        fmt.Println("should run", task.RunAtTick, task.RunAtDate, tq.date, tq.tick)
+        // 检查是否到了执行时间
+        if tq.date == task.RunAtDate </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        <span class="cov8" title="1">return tq.tick &gt;= task.RunAtTick</span>
+}
+
+func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" title="1">{
+        rst := DailyTaskResult{
+                Name:     t.Name,
+                StartAt:  time.Now(),
+                Manually: manually,
+        }
+
+        defer func() </span><span class="cov8" title="1">{
+                if err := recover(); err != nil </span>{<span class="cov0" title="0">
+                        // log.Error(err)
+                }</span>
+                <span class="cov8" title="1">t.Running = false
+                tq.appendResult(rst)</span>
+        }()
+
+        <span class="cov8" title="1">if t.Running </span><span class="cov8" title="1">{
+                rst.Error = errors.New("caller is running")
+                return
+        }</span>
+        <span class="cov8" title="1">t.Running = true
+
+        rst.Message = t.Fn()
+        // log.Info(t.Name, rst.Message)
+        rst.EndAt = time.Now()</span>
+}
+
+func (tq *DailyTaskQueue) appendResult(rst DailyTaskResult) <span class="cov8" title="1">{
+        tq.results = append(tq.results, rst)
+        if len(tq.results) &gt; 1000 </span><span class="cov8" title="1">{
+                tq.results = tq.results[2:]
+        }</span>
+}
+
+// manually run a task
+func (tq *DailyTaskQueue) RunTask(name string) error <span class="cov8" title="1">{
+        for _, task := range tq.tasks </span><span class="cov8" title="1">{
+                if task.Name == name </span><span class="cov8" title="1">{
+                        tq.caller(task, true)
+                        return nil
+                }</span>
+        }
+        <span class="cov8" title="1">return fmt.Errorf("task not found: %s", name)</span>
+}
+
+func (tq *DailyTaskQueue) Status() []DailyTask <span class="cov8" title="1">{
+        return tq.tasks
+}</span>
+
+func (tq *DailyTaskQueue) History() []DailyTaskResult <span class="cov8" title="1">{
+        return tq.results
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package timer
+
+import (
+        "errors"
+        "fmt"
+        "time"
+        // "github.com/DeronW/rlog"
+)
+
+var (
+        // log   = rlog.New("timer")
+        daily = DailyTaskQueue{}
+)
+
+func Init() <span class="cov8" title="1">{
+        daily.Start()
+
+        RegisteInterval("try", test, 1)
+}</span>
+
+func test() string <span class="cov8" title="1">{
+        fmt.Println(time.Now().Format("2006-01-02T15:04:05Z"))
+        return ""
+}</span>
+
+// 添加任务, 时间格式为 09:12，每天执行一次
+func RegisteDaily(name string, fn func() string, time string) error <span class="cov8" title="1">{
+        tick, err := parseTimeToTick(time)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">return daily.RegisteTask(name, fn, tick)</span>
+}
+
+// 添加定时任务，每隔 xx 分钟执行一次
+func RegisteInterval(name string, fn func() string, minutes int) error <span class="cov8" title="1">{
+        if minutes &lt; 1 </span><span class="cov8" title="1">{
+                return errors.New("minutes must be over then 1")
+                // return errors.New("task should't be too frequence")
+        }</span>
+        <span class="cov8" title="1">for i := 0; i &lt; 1440; i += minutes </span><span class="cov8" title="1">{
+                err := daily.RegisteTask(name, fn, i)
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
