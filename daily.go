@@ -81,10 +81,22 @@ func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 
 func (tq *dailyTaskQueue) Start() {
 	if tq.started {
+		logger.Println("daily task queue already started")
 		return
 	}
 	tq.started = true
-	go tq.looper()
+
+	// Calculate delay to start at the beginning of the next minute
+	now := time.Now()
+	delay := time.Duration(60-now.Second()) * time.Second
+	logger.Printf("daily task queue will start in %v seconds", delay.Seconds())
+
+	go func() {
+		time.Sleep(delay)
+		tq.looper()
+	}()
+
+	logger.Println("daily task queue started")
 }
 
 func (tq *dailyTaskQueue) move() {
@@ -122,7 +134,7 @@ func (tq *dailyTaskQueue) caller(t dailyTask, manually bool) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			// log.Error(err)
+			// logger.Println("Error:", err)
 		}
 		t.Running = false
 		tq.appendResult(rst)
@@ -135,7 +147,7 @@ func (tq *dailyTaskQueue) caller(t dailyTask, manually bool) {
 	t.Running = true
 
 	rst.Message = t.Fn()
-	// log.Info(t.Name, rst.Message)
+	// logger.Println(t.Name, rst.Message)
 	rst.EndAt = time.Now()
 }
 
