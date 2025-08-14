@@ -7,7 +7,7 @@ import (
 
 var (
 	// log     = rlog.New("timer")
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 )
 
 func Init() {

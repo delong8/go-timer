@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-type DailyTaskQueue struct {
+type dailyTaskQueue struct {
 	started bool
 	// 每分钟 1 个 tick，每天 1440 个 tick
 	tick int
 	// 日期计数，记录当前循环处于哪个日期
 	date    string
-	tasks   []DailyTask
-	results []DailyTaskResult
+	tasks   []dailyTask
+	results []dailyTaskResult
 }
 
-type DailyTask struct {
+type dailyTask struct {
 	Running bool
 	Fn      func() string
 	Name    string
@@ -28,7 +28,7 @@ type DailyTask struct {
 	RunAtDate string
 }
 
-type DailyTaskResult struct {
+type dailyTaskResult struct {
 	Name     string
 	Message  string
 	Error    error
@@ -62,7 +62,7 @@ func parseTimeToTick(hm string) (tick int, err error) {
 	return int(h*60 + m), nil
 }
 
-func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) error {
+func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) error {
 	if tick < 0 || tick > 1399 {
 		return fmt.Errorf("tick must be in 0-1399, not is %d", tick)
 	}
@@ -71,7 +71,7 @@ func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 			return fmt.Errorf("task already exists: %s", name)
 		}
 	}
-	tq.tasks = append(tq.tasks, DailyTask{
+	tq.tasks = append(tq.tasks, dailyTask{
 		Fn:        fn,
 		Name:      name,
 		RunAtTick: tick,
@@ -79,7 +79,7 @@ func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 	return nil
 }
 
-func (tq *DailyTaskQueue) Start() {
+func (tq *dailyTaskQueue) Start() {
 	if tq.started {
 		return
 	}
@@ -87,13 +87,13 @@ func (tq *DailyTaskQueue) Start() {
 	go tq.looper()
 }
 
-func (tq *DailyTaskQueue) move() {
+func (tq *dailyTaskQueue) move() {
 	now := time.Now()
 	tq.tick = now.Hour()*60 + now.Minute()
 	tq.date = now.Format("2006-01-02")
 }
 
-func (tq *DailyTaskQueue) looper() {
+func (tq *dailyTaskQueue) looper() {
 	for {
 		tq.move()
 		for _, task := range tq.tasks {
@@ -105,7 +105,7 @@ func (tq *DailyTaskQueue) looper() {
 	}
 }
 
-func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool {
+func (tq *dailyTaskQueue) shouldRun(task dailyTask) bool {
 	// 检查是否到了执行时间
 	if tq.date == task.RunAtDate {
 		return false
@@ -113,8 +113,8 @@ func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool {
 	return tq.tick >= task.RunAtTick
 }
 
-func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) {
-	rst := DailyTaskResult{
+func (tq *dailyTaskQueue) caller(t dailyTask, manually bool) {
+	rst := dailyTaskResult{
 		Name:     t.Name,
 		StartAt:  time.Now(),
 		Manually: manually,
@@ -139,7 +139,7 @@ func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) {
 	rst.EndAt = time.Now()
 }
 
-func (tq *DailyTaskQueue) appendResult(rst DailyTaskResult) {
+func (tq *dailyTaskQueue) appendResult(rst dailyTaskResult) {
 	tq.results = append(tq.results, rst)
 	if len(tq.results) > 1000 {
 		tq.results = tq.results[2:]
@@ -147,7 +147,7 @@ func (tq *DailyTaskQueue) appendResult(rst DailyTaskResult) {
 }
 
 // manually run a task
-func (tq *DailyTaskQueue) RunTask(name string) error {
+func (tq *dailyTaskQueue) RunTask(name string) error {
 	for _, task := range tq.tasks {
 		if task.Name == name {
 			tq.caller(task, true)
@@ -157,10 +157,10 @@ func (tq *DailyTaskQueue) RunTask(name string) error {
 	return fmt.Errorf("task not found: %s", name)
 }
 
-func (tq *DailyTaskQueue) Status() []DailyTask {
+func (tq *dailyTaskQueue) Status() []dailyTask {
 	return tq.tasks
 }
 
-func (tq *DailyTaskQueue) History() []DailyTaskResult {
+func (tq *dailyTaskQueue) History() []dailyTaskResult {
 	return tq.results
 }

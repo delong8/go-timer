@@ -74,7 +74,7 @@ func TestParseTimeToTick(t *testing.T) {
 
 func TestRegisteDaily(t *testing.T) {
 	// 重置测试状态
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 
 	// 测试正常注册
 	err := RegisteDaily("test_task", "09:30", func() string { return "test" })
@@ -90,7 +90,7 @@ func TestRegisteDaily(t *testing.T) {
 }
 func TestRegisteInterval(t *testing.T) {
 	// 重置测试状态
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 
 	// 测试无效分钟数
 	err := RegisteInterval("interval_task_0min", 0, func() string { return "interval test" })
@@ -108,7 +108,7 @@ func TestRegisteInterval(t *testing.T) {
 // TestRegisteIntervalCoverage 测试 RegisteInterval 函数的循环执行部分
 func TestRegisteIntervalCoverage(t *testing.T) {
 	// 重置测试状态
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 
 	// 测试正常注册 - 这将覆盖循环执行部分
 	err := RegisteInterval("interval_coverage_test", 720, func() string { return "interval test" }) // 每12小时执行一次
@@ -132,7 +132,7 @@ func TestRegisteIntervalCoverage(t *testing.T) {
 	}
 }
 func TestDailyTaskQueue_RegisteTask(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 测试正常注册
 	err := tq.RegisteTask("test_task", func() string { return "test" }, 540) // 09:00
@@ -162,7 +162,7 @@ func TestDailyTaskQueue_RegisteTask(t *testing.T) {
 // TestRegisteIntervalSuccess 测试 RegisteInterval 函数成功注册任务的情况
 func TestRegisteIntervalSuccess(t *testing.T) {
 	// 重置测试状态
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 
 	// 使用一个较大的间隔值，确保只注册一个任务
 	err := RegisteInterval("interval_success_test", 1440, func() string { return "interval test" })
@@ -186,10 +186,10 @@ func TestRegisteIntervalSuccess(t *testing.T) {
 }
 
 func TestDailyTaskQueue_shouldRun(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 	tq.move() // 初始化当前时间
 
-	task := DailyTask{
+	task := dailyTask{
 		Name:      "test_task",
 		RunAtTick: tq.tick + 1, // 设置为下一分钟执行
 		RunAtDate: "",          // 未执行过
@@ -219,7 +219,7 @@ func TestDailyTaskQueue_shouldRun(t *testing.T) {
 
 func TestInit(t *testing.T) {
 	// 重置测试状态
-	daily = DailyTaskQueue{}
+	daily = dailyTaskQueue{}
 
 	// 调用 Init 函数
 	Init()

@@ -6,7 +6,7 @@ import (
 )
 
 func TestDailyTaskQueue_Move(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 	tq.move()
 
 	// 检查 tick 是否在有效范围内
@@ -22,10 +22,10 @@ func TestDailyTaskQueue_Move(t *testing.T) {
 }
 
 func TestDailyTaskQueue_Caller(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 测试正常执行的任务
-	task := DailyTask{
+	task := dailyTask{
 		Name:      "test_task",
 		Fn:        func() string { return "success" },
 		RunAtTick: 0,
@@ -49,7 +49,7 @@ func TestDailyTaskQueue_Caller(t *testing.T) {
 
 	// 测试正在运行的任务
 	task.Running = true
-	tq.results = []DailyTaskResult{} // 重置结果
+	tq.results = []dailyTaskResult{} // 重置结果
 	tq.caller(task, true)            // 手动触发
 
 	// 检查结果是否被记录为错误
@@ -63,7 +63,7 @@ func TestDailyTaskQueue_Caller(t *testing.T) {
 }
 
 func TestDailyTaskQueue_RunTask(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 添加一个测试任务
 	err := tq.RegisteTask("test_task", func() string { return "test" }, 0)
@@ -85,7 +85,7 @@ func TestDailyTaskQueue_RunTask(t *testing.T) {
 }
 
 func TestDailyTaskQueue_Status(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 添加测试任务
 	err := tq.RegisteTask("test_task", func() string { return "test" }, 0)
@@ -105,7 +105,7 @@ func TestDailyTaskQueue_Status(t *testing.T) {
 }
 
 func TestDailyTaskQueue_History(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 添加并执行一个测试任务
 	err := tq.RegisteTask("test_task", func() string { return "test" }, 0)
@@ -127,7 +127,7 @@ func TestDailyTaskQueue_History(t *testing.T) {
 	}
 }
 func TestDailyTaskQueue_Start(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 第一次调用 Start
 	tq.Start()
@@ -148,7 +148,7 @@ func TestDailyTaskQueue_Start(t *testing.T) {
 
 // TestDailyTaskExecution 测试任务执行的完整流程
 func TestDailyTaskExecution(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 创建一个 channel 来接收任务执行结果
 	resultChan := make(chan string, 1)
@@ -199,11 +199,11 @@ func TestDailyTaskExecution(t *testing.T) {
 }
 
 func TestDailyTaskQueue_appendResult(t *testing.T) {
-	tq := &DailyTaskQueue{}
+	tq := &dailyTaskQueue{}
 
 	// 添加足够多的结果来测试循环缓冲区
 	for i := 0; i < 1001; i++ {
-		result := DailyTaskResult{
+		result := dailyTaskResult{
 			Name:    "test_task",
 			Message: "test",
 		}

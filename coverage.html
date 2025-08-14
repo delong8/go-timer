@@ -88,7 +88,7 @@ type DailyTaskQueue struct {
         // 日期计数，记录当前循环处于哪个日期
         date    string
         tasks   []DailyTask
-        results []DailyTaskResult
+        results []dailyTaskResult
 }
 
 type DailyTask struct {
@@ -101,7 +101,7 @@ type DailyTask struct {
         RunAtDate string
 }
 
-type DailyTaskResult struct {
+type dailyTaskResult struct {
         Name     string
         Message  string
         Error    error
@@ -191,7 +191,7 @@ func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool <span class="cov8" titl
 }
 
 func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" title="1">{
-        rst := DailyTaskResult{
+        rst := dailyTaskResult{
                 Name:     t.Name,
                 StartAt:  time.Now(),
                 Manually: manually,
@@ -216,7 +216,7 @@ func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" 
         rst.EndAt = time.Now()</span>
 }
 
-func (tq *DailyTaskQueue) appendResult(rst DailyTaskResult) <span class="cov8" title="1">{
+func (tq *DailyTaskQueue) appendResult(rst dailyTaskResult) <span class="cov8" title="1">{
         tq.results = append(tq.results, rst)
         if len(tq.results) &gt; 1000 </span><span class="cov8" title="1">{
                 tq.results = tq.results[2:]
@@ -238,7 +238,7 @@ func (tq *DailyTaskQueue) Status() []DailyTask <span class="cov8" title="1">{
         return tq.tasks
 }</span>
 
-func (tq *DailyTaskQueue) History() []DailyTaskResult <span class="cov8" title="1">{
+func (tq *DailyTaskQueue) History() []dailyTaskResult <span class="cov8" title="1">{
         return tq.results
 }</span>
 </pre>
