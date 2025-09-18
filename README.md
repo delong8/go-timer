@@ -1,6 +1,6 @@
 # go-timer
 
-A simple timer utility package for Go.
+A simple timer utility package for Go, only support 
 
 ## Installation
 
@@ -28,6 +28,9 @@ func main() {
 	timer.RegisteInterval("my_interval_task", 5, func(){
 		fmt.Println("Interval task executed!")
 	})
+
+	// cancel task by name
+	timer.CancelTask("my_daily_task")
 }
 ```
 

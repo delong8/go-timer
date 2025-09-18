@@ -13,11 +13,6 @@ var (
 func Init() {
 	logger.Println("init timer")
 	daily.Start()
-
-	// // 注册一个默认的 "try" 任务，每隔 10 分钟执行一次
-	// RegisteInterval("try", 10, func() string {
-	// 	return "try task executed"
-	// })
 }
 
 // 添加任务, 时间格式为 09:12，每天执行一次
@@ -41,4 +36,9 @@ func RegisteInterval(name string, minute int, fn func() string) error {
 		}
 	}
 	return nil
+}
+
+// cancel timer
+func Cancel(name string) []CanceledTask {
+	return daily.CancelTask(name)
 }
