@@ -38,6 +38,12 @@ type dailyTaskResult struct {
 	Manually bool // 是否手动触发
 }
 
+func NewDaily() dailyTaskQueue {
+	var d = dailyTaskQueue{}
+	d.move()
+	return d
+}
+
 func parseTimeToTick(hm string) (tick int, err error) {
 	t := strings.Split(hm, ":")
 	if len(t) != 2 {
@@ -147,7 +153,7 @@ func (tq *dailyTaskQueue) looper() {
 
 		for _, task := range tq.tasks {
 			if tq.shouldRun(*task) {
-				tq.caller(*task, false)
+				tq.caller(*task, false, tq.date)
 			}
 		}
 		time.Sleep(time.Minute)
@@ -166,7 +172,13 @@ func (tq *dailyTaskQueue) shouldRun(task dailyTask) bool {
 	return tq.tick >= task.RunAtTick
 }
 
-func (tq *dailyTaskQueue) caller(t dailyTask, manually bool) {
+/**
+ * 调用任务函数
+ * @param t 任务
+ * @param manually 是否手动触发
+ * @param runAtDate 任务执行日期, if the `manually` is true, this should be empty
+ */
+func (tq *dailyTaskQueue) caller(t dailyTask, manually bool, runAtDate string) {
 	rst := dailyTaskResult{
 		Name:     t.Name,
 		StartAt:  time.Now(),
@@ -186,6 +198,9 @@ func (tq *dailyTaskQueue) caller(t dailyTask, manually bool) {
 		return
 	}
 	t.Running = true
+	if !manually {
+		t.RunAtDate = runAtDate
+	}
 
 	rst.Message = t.Fn()
 	rst.EndAt = time.Now()
@@ -202,7 +217,7 @@ func (tq *dailyTaskQueue) appendResult(rst dailyTaskResult) {
 func (tq *dailyTaskQueue) RunTask(name string) error {
 	for _, task := range tq.tasks {
 		if task.Name == name {
-			tq.caller(*task, true)
+			tq.caller(*task, true, "")
 			return nil
 		}
 	}
