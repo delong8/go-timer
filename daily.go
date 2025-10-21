@@ -72,10 +72,16 @@ func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 			return fmt.Errorf("task already exists: %s", name)
 		}
 	}
+	// if tick less than now, then mark it has been executed
+	runAtDate := ""
+	if tick <= tq.tick {
+		runAtDate = tq.date
+	}
 	tq.tasks = append(tq.tasks, &dailyTask{
 		Fn:        fn,
 		Name:      name,
 		RunAtTick: tick,
+		RunAtDate: runAtDate,
 	})
 	return nil
 }
