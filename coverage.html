@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/delong8/go-timer/daily.go (87.2%)</option>
+				<option value="file0">github.com/delong8/go-timer/daily.go (84.0%)</option>
 				
-				<option value="file1">github.com/delong8/go-timer/timer.go (85.7%)</option>
+				<option value="file1">github.com/delong8/go-timer/timer.go (78.6%)</option>
 				
 				</select>
 			</div>
@@ -79,6 +79,10 @@ import (
         "strconv"
         "strings"
         "time"
+)
+
+const (
+        INTERVAL_SEPERATER = "@"
 )
 
 type dailyTaskQueue struct {
@@ -147,7 +151,7 @@ func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
                 return fmt.Errorf("tick must be in 0-1399, not is %d", tick)
         }</span>
         <span class="cov8" title="1">for _, t := range tq.tasks </span><span class="cov8" title="1">{
-                if t.Name == name </span><span class="cov8" title="1">{
+                if !t.Canceled &amp;&amp; t.Name == name </span><span class="cov8" title="1">{
                         return fmt.Errorf("task already exists: %s", name)
                 }</span>
         }
@@ -173,7 +177,7 @@ type CanceledTask struct {
 func (tq *dailyTaskQueue) CancelTask(name string) []CanceledTask <span class="cov8" title="1">{
         canceledTask := make([]CanceledTask, 0)
         for _, t := range tq.tasks </span><span class="cov8" title="1">{
-                if t.Name != name </span><span class="cov8" title="1">{
+                if t.Name == name || strings.HasPrefix(t.Name, name+INTERVAL_SEPERATER) </span><span class="cov8" title="1">{
                         canceledTask = append(canceledTask, CanceledTask{
                                 Name: t.Name,
                                 Tick: t.RunAtTick,
@@ -239,7 +243,7 @@ func (tq *dailyTaskQueue) shouldRun(task dailyTask) bool <span class="cov8" titl
                 return false
         }</span>
         // check if the task is been canceled
-        <span class="cov8" title="1">if task.Canceled </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">if task.Canceled </span><span class="cov0" title="0">{
                 return false
         }</span>
         <span class="cov8" title="1">return tq.tick &gt;= task.RunAtTick</span>
@@ -259,7 +263,7 @@ func (tq *dailyTaskQueue) caller(t *dailyTask, manually bool, runAtDate string) 
         }
 
         defer func() </span><span class="cov8" title="1">{
-                if err := recover(); err != nil </span><span class="cov8" title="1">{
+                if err := recover(); err != nil </span><span class="cov0" title="0">{
                         logger.Println("Error:", err)
                 }</span>
                 <span class="cov8" title="1">t.Running = false
@@ -271,7 +275,7 @@ func (tq *dailyTaskQueue) caller(t *dailyTask, manually bool, runAtDate string) 
                 return
         }</span>
         <span class="cov8" title="1">t.Running = true
-        if !manually </span><span class="cov8" title="1">{
+        if !manually </span><span class="cov0" title="0">{
                 t.RunAtDate = runAtDate
         }</span>
 
@@ -323,7 +327,7 @@ var (
         daily  = NewDaily()
 )
 
-func Init() <span class="cov8" title="1">{
+func Init() <span class="cov0" title="0">{
         logger.Println("init timer")
         daily.Start()
 }</span>
@@ -343,7 +347,7 @@ func RegisteInterval(name string, minute int, fn func() string) error <span clas
                 return errors.New("minute must be equal or over then 1")
         }</span>
         <span class="cov8" title="1">for i := 0; i &lt; 1440; i += minute </span><span class="cov8" title="1">{
-                err := daily.RegisteTask(fmt.Sprintf("%s-%d", name, i), fn, i)
+                err := daily.RegisteTask(fmt.Sprintf("%s%s%d", name, INTERVAL_SEPERATER, i), fn, i)
                 if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
@@ -352,7 +356,7 @@ func RegisteInterval(name string, minute int, fn func() string) error <span clas
 }
 
 // cancel timer
-func Cancel(name string) []CanceledTask <span class="cov0" title="0">{
+func Cancel(name string) []CanceledTask <span class="cov8" title="1">{
         return daily.CancelTask(name)
 }</span>
 </pre>

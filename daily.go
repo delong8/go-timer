@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	INTERVAL_SEPERATER = "@"
+)
+
 type dailyTaskQueue struct {
 	started bool
 	// 每分钟 1 个 tick，每天 1440 个 tick
@@ -74,7 +78,7 @@ func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
 		return fmt.Errorf("tick must be in 0-1399, not is %d", tick)
 	}
 	for _, t := range tq.tasks {
-		if t.Name == name {
+		if !t.Canceled && t.Name == name {
 			return fmt.Errorf("task already exists: %s", name)
 		}
 	}
@@ -100,7 +104,7 @@ type CanceledTask struct {
 func (tq *dailyTaskQueue) CancelTask(name string) []CanceledTask {
 	canceledTask := make([]CanceledTask, 0)
 	for _, t := range tq.tasks {
-		if t.Name != name {
+		if t.Name == name || strings.HasPrefix(t.Name, name+INTERVAL_SEPERATER) {
 			canceledTask = append(canceledTask, CanceledTask{
 				Name: t.Name,
 				Tick: t.RunAtTick,

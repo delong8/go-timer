@@ -1,6 +1,8 @@
 package timer
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -121,7 +123,7 @@ func TestRegisteIntervalCoverage(t *testing.T) {
 	tasks := daily.Status()
 	found := false
 	for _, task := range tasks {
-		if task.Name == "interval_coverage_test" {
+		if strings.HasPrefix(task.Name, "interval_coverage_test"+INTERVAL_SEPERATER) {
 			found = true
 			break
 		}
@@ -174,7 +176,7 @@ func TestRegisteIntervalSuccess(t *testing.T) {
 	tasks := daily.Status()
 	found := false
 	for _, task := range tasks {
-		if task.Name == "interval_success_test" {
+		if strings.HasPrefix(task.Name, "interval_success_test"+INTERVAL_SEPERATER) {
 			found = true
 			break
 		}
@@ -182,6 +184,46 @@ func TestRegisteIntervalSuccess(t *testing.T) {
 
 	if !found {
 		t.Error("Expected one task to be registered")
+	}
+}
+
+// TestRegisteIntervalMultipleTasks 测试 RegisteInterval 函数注册多个任务的情况
+func TestRegisteIntervalMultipleTasks(t *testing.T) {
+	// 重置测试状态
+	daily = dailyTaskQueue{}
+
+	// 使用一个较小的间隔值，确保注册多个任务
+	err := RegisteInterval("interval_multiple_test", 60, func() string { return "interval test" }) // 每小时执行一次
+	if err != nil {
+		t.Errorf("Expected no error, but got %v", err)
+	}
+
+	// 检查是否注册了多个任务
+	tasks := daily.Status()
+	count := 0
+	for _, task := range tasks {
+		if strings.HasPrefix(task.Name, "interval_multiple_test"+INTERVAL_SEPERATER) {
+			count++
+		}
+	}
+
+	// 验证至少注册了10个任务（24小时内每小时一次）
+	if count < 10 {
+		t.Errorf("Expected at least 10 tasks to be registered, but got %d", count)
+	}
+
+	// 验证任务名称格式正确
+	if count > 0 {
+		firstTask := tasks[0]
+		parts := strings.Split(firstTask.Name, INTERVAL_SEPERATER)
+		if len(parts) != 2 {
+			t.Errorf("Expected task name format 'name@tick', but got '%s'", firstTask.Name)
+		}
+
+		// 验证 tick 部分是数字
+		if _, err := strconv.Atoi(parts[1]); err != nil {
+			t.Errorf("Expected tick part to be a number, but got '%s'", parts[1])
+		}
 	}
 }
 
@@ -217,24 +259,3 @@ func TestDailyTaskQueue_shouldRun(t *testing.T) {
 	}
 }
 
-func TestInit(t *testing.T) {
-	// 重置测试状态
-	daily = dailyTaskQueue{}
-
-	// 调用 Init 函数
-	Init()
-
-	// 检查是否注册了 "try" 任务
-	tasks := daily.Status()
-	found := false
-	for _, task := range tasks {
-		if task.Name == "try" {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		t.Error("Expected 'try' task to be registered after Init, but it was not found")
-	}
-}

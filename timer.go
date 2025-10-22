@@ -31,7 +31,7 @@ func RegisteInterval(name string, minute int, fn func() string) error {
 		return errors.New("minute must be equal or over then 1")
 	}
 	for i := 0; i < 1440; i += minute {
-		err := daily.RegisteTask(fmt.Sprintf("%s-%d", name, i), fn, i)
+		err := daily.RegisteTask(fmt.Sprintf("%s%s%d", name, INTERVAL_SEPERATER, i), fn, i)
 		if err != nil {
 			return err
 		}
