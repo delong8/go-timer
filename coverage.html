@@ -55,9 +55,9 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/delong8/go-timer/daily.go (100.0%)</option>
+				<option value="file0">github.com/delong8/go-timer/daily.go (87.2%)</option>
 				
-				<option value="file1">github.com/delong8/go-timer/timer.go (93.3%)</option>
+				<option value="file1">github.com/delong8/go-timer/timer.go (85.7%)</option>
 				
 				</select>
 			</div>
@@ -81,17 +81,17 @@ import (
         "time"
 )
 
-type DailyTaskQueue struct {
+type dailyTaskQueue struct {
         started bool
         // 每分钟 1 个 tick，每天 1440 个 tick
         tick int
         // 日期计数，记录当前循环处于哪个日期
         date    string
-        tasks   []DailyTask
+        tasks   []*dailyTask
         results []dailyTaskResult
 }
 
-type DailyTask struct {
+type dailyTask struct {
         Running bool
         Fn      func() string
         Name    string
@@ -99,6 +99,7 @@ type DailyTask struct {
         RunAtTick int
         // 上次执行是在哪个执行周期
         RunAtDate string
+        Canceled  bool
 }
 
 type dailyTaskResult struct {
@@ -109,6 +110,12 @@ type dailyTaskResult struct {
         EndAt    time.Time
         Manually bool // 是否手动触发
 }
+
+func NewDaily() dailyTaskQueue <span class="cov8" title="1">{
+        var d = dailyTaskQueue{}
+        d.move()
+        return d
+}</span>
 
 func parseTimeToTick(hm string) (tick int, err error) <span class="cov8" title="1">{
         t := strings.Split(hm, ":")
@@ -135,7 +142,7 @@ func parseTimeToTick(hm string) (tick int, err error) <span class="cov8" title="
         <span class="cov8" title="1">return int(h*60 + m), nil</span>
 }
 
-func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) error <span class="cov8" title="1">{
+func (tq *dailyTaskQueue) RegisteTask(name string, fn func() string, tick int) error <span class="cov8" title="1">{
         if tick &lt; 0 || tick &gt; 1399 </span><span class="cov8" title="1">{
                 return fmt.Errorf("tick must be in 0-1399, not is %d", tick)
         }</span>
@@ -144,53 +151,107 @@ func (tq *DailyTaskQueue) RegisteTask(name string, fn func() string, tick int) e
                         return fmt.Errorf("task already exists: %s", name)
                 }</span>
         }
-        <span class="cov8" title="1">fmt.Println(333, name)
-        tq.tasks = append(tq.tasks, DailyTask{
+        // if tick less than now, then mark it has been executed
+        <span class="cov8" title="1">runAtDate := ""
+        if tick &lt;= tq.tick </span><span class="cov8" title="1">{
+                runAtDate = tq.date
+        }</span>
+        <span class="cov8" title="1">tq.tasks = append(tq.tasks, &amp;dailyTask{
                 Fn:        fn,
                 Name:      name,
                 RunAtTick: tick,
+                RunAtDate: runAtDate,
         })
         return nil</span>
 }
 
-func (tq *DailyTaskQueue) Start() <span class="cov8" title="1">{
+type CanceledTask struct {
+        Name string
+        Tick int
+}
+
+func (tq *dailyTaskQueue) CancelTask(name string) []CanceledTask <span class="cov8" title="1">{
+        canceledTask := make([]CanceledTask, 0)
+        for _, t := range tq.tasks </span><span class="cov8" title="1">{
+                if t.Name != name </span><span class="cov8" title="1">{
+                        canceledTask = append(canceledTask, CanceledTask{
+                                Name: t.Name,
+                                Tick: t.RunAtTick,
+                        })
+                        t.Canceled = true
+                }</span>
+        }
+        <span class="cov8" title="1">return canceledTask</span>
+}
+
+func (tq *dailyTaskQueue) Start() <span class="cov8" title="1">{
         if tq.started </span><span class="cov8" title="1">{
+                logger.Println("daily task queue already started")
                 return
         }</span>
         <span class="cov8" title="1">tq.started = true
-        go tq.looper()</span>
+
+        // Calculate delay to start at the beginning of the next minute
+        now := time.Now()
+        delay := time.Duration(60-now.Second()) * time.Second
+        logger.Printf("daily task queue will start in %v seconds", delay.Seconds())
+
+        go func() </span><span class="cov8" title="1">{
+                time.Sleep(delay)
+                tq.looper()
+        }</span>()
+
+        <span class="cov8" title="1">logger.Println("daily task queue started")</span>
 }
 
-func (tq *DailyTaskQueue) move() <span class="cov8" title="1">{
+func (tq *dailyTaskQueue) move() <span class="cov8" title="1">{
         now := time.Now()
         tq.tick = now.Hour()*60 + now.Minute()
         tq.date = now.Format("2006-01-02")
-        fmt.Println(tq.tick, tq.date)
 }</span>
 
-func (tq *DailyTaskQueue) looper() <span class="cov8" title="1">{
-        for </span><span class="cov8" title="1">{
+func (tq *dailyTaskQueue) looper() <span class="cov0" title="0">{
+        for </span><span class="cov0" title="0">{
+                var tasks []*dailyTask
                 tq.move()
-                for _, task := range tq.tasks </span><span class="cov8" title="1">{
-                        fmt.Println(222, task.Name)
-                        if tq.shouldRun(task) </span><span class="cov8" title="1">{
-                                tq.caller(task, false)
+                // remove canceled tasks
+                for _, t := range tq.tasks </span><span class="cov0" title="0">{
+                        if t.Canceled </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+                        <span class="cov0" title="0">tasks = append(tasks, t)</span>
+                }
+                // update task list
+                <span class="cov0" title="0">tq.tasks = tasks
+
+                for _, task := range tq.tasks </span><span class="cov0" title="0">{
+                        if tq.shouldRun(*task) </span><span class="cov0" title="0">{
+                                tq.caller(task, false, tq.date)
                         }</span>
                 }
-                <span class="cov8" title="1">time.Sleep(time.Minute)</span>
+                <span class="cov0" title="0">time.Sleep(time.Minute)</span>
         }
 }
 
-func (tq *DailyTaskQueue) shouldRun(task DailyTask) bool <span class="cov8" title="1">{
-        fmt.Println("should run", task.RunAtTick, task.RunAtDate, tq.date, tq.tick)
+func (tq *dailyTaskQueue) shouldRun(task dailyTask) bool <span class="cov8" title="1">{
         // 检查是否到了执行时间
         if tq.date == task.RunAtDate </span><span class="cov8" title="1">{
+                return false
+        }</span>
+        // check if the task is been canceled
+        <span class="cov8" title="1">if task.Canceled </span><span class="cov8" title="1">{
                 return false
         }</span>
         <span class="cov8" title="1">return tq.tick &gt;= task.RunAtTick</span>
 }
 
-func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" title="1">{
+/**
+ * 调用任务函数
+ * @param t 任务
+ * @param manually 是否手动触发
+ * @param runAtDate 任务执行日期, if the `manually` is true, this should be empty
+ */
+func (tq *dailyTaskQueue) caller(t *dailyTask, manually bool, runAtDate string) <span class="cov8" title="1">{
         rst := dailyTaskResult{
                 Name:     t.Name,
                 StartAt:  time.Now(),
@@ -198,8 +259,8 @@ func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" 
         }
 
         defer func() </span><span class="cov8" title="1">{
-                if err := recover(); err != nil </span>{<span class="cov0" title="0">
-                        // log.Error(err)
+                if err := recover(); err != nil </span><span class="cov8" title="1">{
+                        logger.Println("Error:", err)
                 }</span>
                 <span class="cov8" title="1">t.Running = false
                 tq.appendResult(rst)</span>
@@ -210,13 +271,15 @@ func (tq *DailyTaskQueue) caller(t DailyTask, manually bool) <span class="cov8" 
                 return
         }</span>
         <span class="cov8" title="1">t.Running = true
+        if !manually </span><span class="cov8" title="1">{
+                t.RunAtDate = runAtDate
+        }</span>
 
-        rst.Message = t.Fn()
-        // log.Info(t.Name, rst.Message)
+        <span class="cov8" title="1">rst.Message = t.Fn()
         rst.EndAt = time.Now()</span>
 }
 
-func (tq *DailyTaskQueue) appendResult(rst dailyTaskResult) <span class="cov8" title="1">{
+func (tq *dailyTaskQueue) appendResult(rst dailyTaskResult) <span class="cov8" title="1">{
         tq.results = append(tq.results, rst)
         if len(tq.results) &gt; 1000 </span><span class="cov8" title="1">{
                 tq.results = tq.results[2:]
@@ -224,21 +287,25 @@ func (tq *DailyTaskQueue) appendResult(rst dailyTaskResult) <span class="cov8" t
 }
 
 // manually run a task
-func (tq *DailyTaskQueue) RunTask(name string) error <span class="cov8" title="1">{
+func (tq *dailyTaskQueue) RunTask(name string) error <span class="cov8" title="1">{
         for _, task := range tq.tasks </span><span class="cov8" title="1">{
                 if task.Name == name </span><span class="cov8" title="1">{
-                        tq.caller(task, true)
+                        tq.caller(task, true, "")
                         return nil
                 }</span>
         }
         <span class="cov8" title="1">return fmt.Errorf("task not found: %s", name)</span>
 }
 
-func (tq *DailyTaskQueue) Status() []DailyTask <span class="cov8" title="1">{
-        return tq.tasks
-}</span>
+func (tq *dailyTaskQueue) Status() []dailyTask <span class="cov8" title="1">{
+        ts := make([]dailyTask, 0)
+        for _, t := range tq.tasks </span><span class="cov8" title="1">{
+                ts = append(ts, *t)
+        }</span>
+        <span class="cov8" title="1">return ts</span>
+}
 
-func (tq *DailyTaskQueue) History() []dailyTaskResult <span class="cov8" title="1">{
+func (tq *dailyTaskQueue) History() []dailyTaskResult <span class="cov8" title="1">{
         return tq.results
 }</span>
 </pre>
@@ -248,28 +315,21 @@ func (tq *DailyTaskQueue) History() []dailyTaskResult <span class="cov8" title="
 import (
         "errors"
         "fmt"
-        "time"
-        // "github.com/DeronW/rlog"
+        "log"
 )
 
 var (
-        // log   = rlog.New("timer")
-        daily = DailyTaskQueue{}
+        logger = log.New(log.Writer(), "[go-timer] ", log.LstdFlags)
+        daily  = NewDaily()
 )
 
 func Init() <span class="cov8" title="1">{
+        logger.Println("init timer")
         daily.Start()
-
-        RegisteInterval("try", test, 1)
-}</span>
-
-func test() string <span class="cov8" title="1">{
-        fmt.Println(time.Now().Format("2006-01-02T15:04:05Z"))
-        return ""
 }</span>
 
 // 添加任务, 时间格式为 09:12，每天执行一次
-func RegisteDaily(name string, fn func() string, time string) error <span class="cov8" title="1">{
+func RegisteDaily(name string, time string, fn func() string) error <span class="cov8" title="1">{
         tick, err := parseTimeToTick(time)
         if err != nil </span><span class="cov8" title="1">{
                 return err
@@ -278,19 +338,23 @@ func RegisteDaily(name string, fn func() string, time string) error <span class=
 }
 
 // 添加定时任务，每隔 xx 分钟执行一次
-func RegisteInterval(name string, fn func() string, minutes int) error <span class="cov8" title="1">{
-        if minutes &lt; 1 </span><span class="cov8" title="1">{
-                return errors.New("minutes must be over then 1")
-                // return errors.New("task should't be too frequence")
+func RegisteInterval(name string, minute int, fn func() string) error <span class="cov8" title="1">{
+        if minute &lt; 1 </span><span class="cov8" title="1">{
+                return errors.New("minute must be equal or over then 1")
         }</span>
-        <span class="cov8" title="1">for i := 0; i &lt; 1440; i += minutes </span><span class="cov8" title="1">{
-                err := daily.RegisteTask(name, fn, i)
-                if err != nil </span><span class="cov8" title="1">{
+        <span class="cov8" title="1">for i := 0; i &lt; 1440; i += minute </span><span class="cov8" title="1">{
+                err := daily.RegisteTask(fmt.Sprintf("%s-%d", name, i), fn, i)
+                if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
         }
-        <span class="cov0" title="0">return nil</span>
+        <span class="cov8" title="1">return nil</span>
 }
+
+// cancel timer
+func Cancel(name string) []CanceledTask <span class="cov0" title="0">{
+        return daily.CancelTask(name)
+}</span>
 </pre>
 		
 		</div>
